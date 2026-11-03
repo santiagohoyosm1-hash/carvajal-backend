@@ -1,0 +1,19 @@
+# MySQL local para desarrollo. Conéctate desde MySQL Workbench a localhost:3306.
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: carvajal-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: wishlist_db
+      MYSQL_USER: carvajal
+      MYSQL_PASSWORD: carvajal123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/01_wishlist_db.sql:/docker-entrypoint-initdb.d/01_wishlist_db.sql:ro
+
+volumes:
+  mysql_data:
