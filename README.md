@@ -65,5 +65,44 @@ git flow release finish 1.0.0                # fusiona en main y develop, crea e
 git push origin main develop --tags
 ```
 
-## Pendiente (fuera de este microservicio)
-RabbitMQ (eventos), seguridad, y los demás microservicios (`api-gateway`, `ms-productos`, `ms-historial`, `ms-notificaciones`), que no venían en el zip. Cámbialos también a MySQL (`mysql-connector-j` y `jdbc:mysql://`).
+## Microservicios incluidos
+| Servicio | Carpeta | Puerto local | Rutas |
+|---|---|---|---|
+| Lista de deseos | `ms-wishlist` | 8082 | `/api/wishlist` |
+| Catalogo | `ms-productos` | 8081 | `GET/POST /api/productos`, `GET/PUT/DELETE /api/productos/{id}` (DELETE = borrado logico; el GET solo devuelve activos; carga 5 productos de ejemplo si la tabla esta vacia) |
+| Historial | `ms-historial` | 8083 | `GET /api/historial/{usuarioId}`, `POST /api/historial` |
+| Notificaciones | `ms-notificaciones` | 8084 | `GET /api/notificaciones/{usuarioId}`, `POST /api/notificaciones`, `PATCH /api/notificaciones/{id}/leida` |
+
+Los cuatro usan la misma base MySQL (`wishlist_db`) con tablas distintas (`deseos`, `productos`, `movimientos`, `notificaciones`), que Hibernate crea solo (`DDL_AUTO=update`).
+`ms-historial` avisa a `ms-notificaciones` (mejor esfuerzo) al registrar un movimiento si existe `NOTIFICACIONES_URL`.
+
+### Variables en Railway (los tres servicios nuevos)
+Crea un servicio por carpeta (*New > GitHub Repo > este repo*), con *Settings > Root Directory* = `ms-productos`, `ms-historial` o `ms-notificaciones`, y un dominio publico en *Networking*. Variables:
+```
+DB_URL=jdbc:mysql://${{MySQL.MYSQLHOST}}:${{MySQL.MYSQLPORT}}/${{MySQL.MYSQLDATABASE}}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+DB_USER=${{MySQL.MYSQLUSER}}
+DB_PASSWORD=${{MySQL.MYSQLPASSWORD}}
+```
+Solo `ms-historial` ademas: `NOTIFICACIONES_URL=http://ms-notificaciones.railway.internal:<PORT>` (fija `PORT=8084` en ms-notificaciones).
+Solo `ms-wishlist` ademas: `PRODUCTOS_URL=http://ms-productos.railway.internal:8081` (fija `PORT=8081` en ms-productos).
+
+### vercel.json del frontend (una regla por servicio)
+Cambia cada `URL-...` por el dominio publico del servicio:
+```json
+{
+  "rewrites": [
+    { "source": "/api/wishlist/:path*",       "destination": "https://URL-WISHLIST/api/wishlist/:path*" },
+    { "source": "/api/wishlist",              "destination": "https://URL-WISHLIST/api/wishlist" },
+    { "source": "/api/productos/:path*",      "destination": "https://URL-PRODUCTOS/api/productos/:path*" },
+    { "source": "/api/productos",             "destination": "https://URL-PRODUCTOS/api/productos" },
+    { "source": "/api/historial/:path*",      "destination": "https://URL-HISTORIAL/api/historial/:path*" },
+    { "source": "/api/historial",             "destination": "https://URL-HISTORIAL/api/historial" },
+    { "source": "/api/notificaciones/:path*", "destination": "https://URL-NOTIFICACIONES/api/notificaciones/:path*" },
+    { "source": "/api/notificaciones",        "destination": "https://URL-NOTIFICACIONES/api/notificaciones" },
+    { "source": "/((?!api/).*)",              "destination": "/index.html" }
+  ]
+}
+```
+
+## Pendiente
+RabbitMQ (eventos), seguridad y un `api-gateway`. Hoy el front llama a cada servicio a traves de los rewrites de Vercel.
