@@ -21,3 +21,7 @@ spring:
 
 seed:
   productos: ${SEED_PRODUCTOS:true}
+
+security:
+  jwt:
+    secret: ${JWT_SECRET}

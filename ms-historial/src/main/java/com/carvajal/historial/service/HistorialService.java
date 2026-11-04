@@ -3,7 +3,8 @@ package com.carvajal.historial.service;
 import com.carvajal.historial.dto.MovimientoRequest;
 import com.carvajal.historial.dto.MovimientoResponse;
 import com.carvajal.historial.entity.Movimiento;
-import com.carvajal.historial.notificaciones.NotificadorHttp;
+import com.carvajal.contracts.MovimientoRegistradoEvent;
+import com.carvajal.historial.notificaciones.MovimientoEventPublisher;
 import com.carvajal.historial.repository.MovimientoRepository;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -13,11 +14,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class HistorialService {
 
     private final MovimientoRepository repo;
-    private final NotificadorHttp notificador;
+    private final MovimientoEventPublisher eventPublisher;
 
-    public HistorialService(MovimientoRepository repo, NotificadorHttp notificador) {
+    public HistorialService(MovimientoRepository repo, MovimientoEventPublisher eventPublisher) {
         this.repo = repo;
-        this.notificador = notificador;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional(readOnly = true)
@@ -34,7 +35,7 @@ public class HistorialService {
         m.setDetalle(r.detalle());
         MovimientoResponse guardado = MovimientoResponse.de(repo.save(m));
         String texto = r.detalle() != null && !r.detalle().isBlank() ? r.detalle() : "Movimiento " + guardado.accion();
-        notificador.notificar(r.usuarioId(), r.productoId(), texto);
+        eventPublisher.publicar(new MovimientoRegistradoEvent(r.usuarioId(), r.productoId(), texto));
         return guardado;
     }
 }

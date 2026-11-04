@@ -9,6 +9,14 @@ cors:
 spring:
   application:
     name: ms-notificaciones
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:carvajal}
+    password: ${RABBITMQ_PASSWORD:carvajal123}
+    listener:
+      simple:
+        auto-startup: ${RABBITMQ_LISTENER_AUTO_STARTUP:true}
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3306/wishlist_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
     username: ${DB_USER:carvajal}
@@ -18,3 +26,13 @@ spring:
     hibernate:
       ddl-auto: ${DDL_AUTO:update}
     show-sql: ${SHOW_SQL:false}
+
+app:
+  messaging:
+    exchange: carvajal.events
+    queue: notificaciones.movimiento.registrado
+    routing-key: historial.movimiento.registrado
+
+security:
+  jwt:
+    secret: ${JWT_SECRET}

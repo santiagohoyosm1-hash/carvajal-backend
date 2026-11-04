@@ -7,6 +7,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
@@ -32,9 +35,13 @@ public class ProductosHttpAdapter implements CatalogoProductos {
     @Override
     public Optional<ProductoCatalogo> buscarPorId(Long productoId) {
         try {
-            List<ProductoExterno> productos = restClient.get()
-                    .uri("/api/productos")
-                    .retrieve()
+            var request = restClient.get().uri("/api/productos");
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication instanceof JwtAuthenticationToken jwtAuthentication) {
+                request.headers(headers ->
+                        headers.setBearerAuth(jwtAuthentication.getToken().getTokenValue()));
+            }
+            List<ProductoExterno> productos = request.retrieve()
                     .body(new ParameterizedTypeReference<List<ProductoExterno>>() { });
             if (productos == null) {
                 return Optional.empty();

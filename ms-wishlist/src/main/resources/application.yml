@@ -22,3 +22,13 @@ spring:
     hibernate:
       ddl-auto: ${DDL_AUTO:update}   # en producción: validate (con el script SQL) o migraciones Flyway
     show-sql: ${SHOW_SQL:false}
+
+security:
+  jwt:
+    secret: ${JWT_SECRET}
+    access-token-ttl: ${JWT_ACCESS_TOKEN_TTL:PT15M}
+
+auth:
+  admin:
+    username: ${AUTH_ADMIN_USERNAME:}
+    password: ${AUTH_ADMIN_PASSWORD:}
