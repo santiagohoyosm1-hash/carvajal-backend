@@ -1,5 +1,23 @@
 # MySQL local para desarrollo. Conéctate desde MySQL Workbench a localhost:3306.
 services:
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: carvajal-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: carvajal
+      RABBITMQ_DEFAULT_PASS: carvajal123
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   mysql:
     image: mysql:8.4
     container_name: carvajal-mysql
@@ -17,3 +35,4 @@ services:
 
 volumes:
   mysql_data:
+  rabbitmq_data:

@@ -6,12 +6,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 
 import com.carvajal.wishlist.exception.CatalogoNoDisponibleException;
+import java.time.Instant;
 import java.util.Optional;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
@@ -32,6 +38,11 @@ class ProductosHttpAdapterTest {
         RestClient.Builder builder = RestClient.builder().baseUrl("http://productos");
         servidor = MockRestServiceServer.bindTo(builder).build();
         adaptador = new ProductosHttpAdapter(builder.build());
+    }
+
+    @AfterEach
+    void limpiarSecurityContext() {
+        SecurityContextHolder.clearContext();
     }
 
     @Test
@@ -69,5 +80,22 @@ class ProductosHttpAdapterTest {
                 .andRespond(withServerError());
 
         assertThrows(CatalogoNoDisponibleException.class, () -> adaptador.buscarPorId(1L));
+    }
+
+    @Test
+    void propagaElJwtEnLaLlamadaAlCatalogo() {
+        String tokenValue = "access-token";
+        Jwt token = Jwt.withTokenValue(tokenValue)
+                .header("alg", "HS256")
+                .subject("7")
+                .issuedAt(Instant.now())
+                .expiresAt(Instant.now().plusSeconds(60))
+                .build();
+        SecurityContextHolder.getContext().setAuthentication(new JwtAuthenticationToken(token));
+        servidor.expect(requestTo("http://productos/api/productos"))
+                .andExpect(header("Authorization", "Bearer " + tokenValue))
+                .andRespond(withSuccess(LISTA, MediaType.APPLICATION_JSON));
+
+        assertTrue(adaptador.buscarPorId(1L).isPresent());
     }
 }
